@@ -21,6 +21,10 @@ class UploadError(SupernoteError):
     """The tablet refused an upload or the transfer failed."""
 
 
+class RemoteDirectoryError(SupernoteError):
+    """The configured Browse & Access destination is not a valid directory."""
+
+
 @dataclass(frozen=True, slots=True)
 class UploadResult:
     """Information about a completed Browse & Access upload."""
@@ -63,6 +67,30 @@ class SupernoteConnection:
     def probe(self) -> bool:
         """Check that this endpoint currently exposes Browse & Access."""
         return probe(self.host, self.port, min(self.timeout, 5.0))
+
+    def validate_directory(self, directory: str = "/") -> None:
+        """Ensure a destination directory exists before starting conversion/upload.
+
+        Browse & Access responds to an unknown path with a redirect to its root.
+        Treat that as an error rather than uploading to an unintended location.
+        """
+        request_path = _directory_path(directory)
+        connection = http.client.HTTPConnection(self.host, self.port, timeout=self.timeout)
+        try:
+            connection.request("GET", request_path, headers={"Accept": "text/html"})
+            response = connection.getresponse()
+            response.read(4096)
+        except (OSError, http.client.HTTPException) as error:
+            raise RemoteDirectoryError(f"could not check tablet directory {request_path}: {error}") from error
+        finally:
+            connection.close()
+        if not 200 <= response.status < 300:
+            location = response.getheader("Location")
+            redirected = f" (redirected to {location!r})" if location else ""
+            raise RemoteDirectoryError(
+                f"tablet directory {request_path!r} is unavailable: HTTP {response.status}{redirected}. "
+                "Check its spelling and create it on the tablet first."
+            )
 
     def upload_file(self, local_path: str | Path, directory: str = "/") -> UploadResult:
         """Upload a local file into a tablet directory.
@@ -115,7 +143,11 @@ class SupernoteConnection:
             connection.close()
         if not 200 <= response.status < 300:
             detail = f": {response_body[:300]}" if response_body else ""
-            raise UploadError(f"tablet returned HTTP {response.status} while uploading {filename!r}{detail}")
+            location = response.getheader("Location")
+            redirected = f" (redirected to {location!r})" if location else ""
+            raise UploadError(
+                f"tablet returned HTTP {response.status} while uploading {filename!r}{redirected}{detail}"
+            )
         remote_path = request_path.rstrip("/") + "/" + filename
         return UploadResult(remote_path=remote_path, bytes_sent=size, status=response.status)
 

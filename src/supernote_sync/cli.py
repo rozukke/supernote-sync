@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Sequence
 
-from .client import SupernoteConnection
+from .client import SupernoteConnection, SupernoteError
 from .discovery import discover
 from .sync import SyncError, load_config, sync_folder
 
@@ -62,7 +62,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise SyncError(f"multiple Supernotes discovered; pass --host: {choices}")
             connection = SupernoteConnection.from_endpoint(devices[0], timeout=args.timeout)
         report = sync_folder(connection, config, dry_run=args.dry_run)
-    except SyncError as error:
+    except (SyncError, SupernoteError) as error:
         parser.error(str(error))
     print(f"sync complete: {report.uploaded} uploaded, {report.converted} converted, {report.skipped} unchanged")
     return 0

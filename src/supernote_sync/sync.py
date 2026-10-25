@@ -118,6 +118,9 @@ def sync_folder(connection: SupernoteConnection, config: SyncConfig, *, dry_run:
     SHA-256 manifest prevents repeat uploads; remove the state file to force a
     re-upload.
     """
+    # Validate before conversion so a typo cannot consume time and leave a
+    # generated cache while the upload has no valid destination.
+    connection.validate_directory(config.remote_directory)
     state = _load_state(config.state_file)
     files = state.setdefault("files", {})
     converted = uploaded = skipped = 0

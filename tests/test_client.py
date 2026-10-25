@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from supernote_sync import SupernoteConnection, discover
+from supernote_sync.client import RemoteDirectoryError
 from supernote_sync.sync import SyncConfig, sync_folder
 
 
@@ -15,6 +16,11 @@ class BrowseHandler(BaseHTTPRequestHandler):
     request_path = ""
 
     def do_GET(self) -> None:  # noqa: N802
+        if self.path == "/missing/":
+            self.send_response(301)
+            self.send_header("Location", "/")
+            self.end_headers()
+            return
         body = b"<script>const json = '{\"fileList\":[]}'</script>"
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
@@ -69,6 +75,10 @@ class ClientTest(unittest.TestCase):
     def test_upload_rejects_parent_directory(self) -> None:
         with self.assertRaisesRegex(ValueError, "must not contain"):
             self.client.upload_bytes(b"x", "test.txt", "/INBOX/../Documents")
+
+    def test_directory_validation_reports_redirected_missing_folder(self) -> None:
+        with self.assertRaisesRegex(RemoteDirectoryError, "redirected to '/'"):
+            self.client.validate_directory("/missing")
 
     def test_sync_uses_manifest_to_avoid_repeat_uploads(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
