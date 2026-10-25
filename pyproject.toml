@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "supernote-sync"
+version = "0.1.0"
+description = "Local Supernote Browse & Access discovery and upload client"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "supernote-sync contributors"}]
+
+[project.scripts]
+supernote-sync = "supernote_sync.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+supernote_sync = ["assets/fonts/Baskervville/*.ttf", "assets/fonts/Baskervville/*.txt"]
+

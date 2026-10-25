@@ -1,0 +1,37 @@
+# Copy to supernote-sync.toml and adjust source_directory and remote_directory.
+# The remote directory must already exist on the tablet.
+[sync]
+source_directory = "/home/art/code/supernote-sync/books/"
+remote_directory = "/Documents/Non-Fiction"
+# state_file and cache_directory are relative to source_directory by default.
+state_file = ".supernote-sync-state.json"
+cache_directory = ".supernote-sync-cache"
+
+# The bundled Baskervville font is made available to headless Calibre privately;
+# it is not installed on the host. These settings came from the provided
+# Calibre configuration and convert EPUB input into fixed 1920x2560-pixel PDFs.
+[calibre]
+command = "ebook-convert"
+arguments = [
+  "--input-profile", "kindle",
+  "--output-profile", "generic_eink_hd",
+  "--custom-size", "1920x2560",
+  "--unit", "devicepixel",
+  "--change-justification", "justify",
+  "--minimum-line-height", "133",
+  "--pdf-hyphenate",
+  "--preserve-cover-aspect-ratio",
+  "--pdf-serif-family", "Baskervville",
+  "--pdf-sans-family", "Tahoma",
+  "--pdf-mono-family", "Courier New",
+  "--pdf-standard-font", "serif",
+  "--pdf-default-font-size", "25",
+  "--pdf-mono-font-size", "25",
+  "--pdf-page-numbers",
+  "--pdf-add-toc",
+  "--pdf-page-margin-left", "110",
+  "--pdf-page-margin-top", "90",
+  "--pdf-page-margin-right", "100",
+  "--pdf-page-margin-bottom", "120",
+  "--chapter-mark", "pagebreak",
+]
